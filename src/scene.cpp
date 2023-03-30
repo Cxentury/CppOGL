@@ -184,7 +184,7 @@ void Scene::renderLoop() {
 		//Default framebuffer
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glDisable(GL_DEPTH_TEST);
-		fb->setInputTextures(*pProcessingShader, 3);
+		fb->setInputTextures(*pProcessingShader, 2);
 		sceneModel.draw(*pProcessingShader);
 
 		this->m_gui.render(this);

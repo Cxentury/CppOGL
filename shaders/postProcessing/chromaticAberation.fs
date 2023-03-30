@@ -41,11 +41,6 @@ void main() {
     else if (effects.blur) {
         FragColor = texture(texture1, textCoord);
     }
-
-    else if (effects.bloom) {
-        FragColor.rgb = FragColor.rgb * 1.1; // TODO: CHANGE TO A REAL METHOD LOL
-    }
-
     else if (effects.hdr) {
         FragColor = texture(texture1, textCoord);
     }
