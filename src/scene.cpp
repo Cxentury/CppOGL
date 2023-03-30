@@ -177,7 +177,14 @@ void Scene::renderLoop() {
 			fb->setOuputTexture(1);
 			sceneModel.draw(*hdr);
 		}
-		
+		else if (pProcessing.getBool("bokeh")) {
+			// Draw bokeh scene
+			Shader* bokeh = m_shaders.find("bokeh")->second;
+			fb->setInputTextures(*bokeh, 1);
+			fb->setOuputTexture(1);
+			sceneModel.draw(*bokeh);
+		}
+
 		Shader* pProcessingShader = m_shaders.find("postProcessing")->second;
 		pProcessing.updateUniforms(*pProcessingShader);
 
@@ -269,8 +276,9 @@ void Scene::setupScene() {
 
 
 	this->addShader("default", new Shader{ "shaders/default.vs", "shaders/default.fs" });
-	this->addShader("postProcessing", new Shader{ "shaders/postProcessing.vs", "shaders/postProcessing/chromaticAberation.fs" });
+	this->addShader("postProcessing", new Shader{ "shaders/postProcessing.vs", "shaders/postProcessing/postProcessing.fs" });
 	this->addShader("blur", new Shader{ "shaders/postProcessing.vs", "shaders/postProcessing/boxBlur.frag" });
+	this->addShader("bokeh", new Shader{ "shaders/postProcessing.vs", "shaders/postProcessing/bokeh.frag" });
 	this->addShader("hdr", new Shader{ "shaders/postProcessing.vs", "shaders/postProcessing/hdrShader.fs" });
 	this->addShader("outlineShader", new Shader{ "shaders/outline.vs", "shaders/outline.fs" });
 	this->addShader("lightShader", new Shader{ "shaders/default.vs", "shaders/light.fs" });

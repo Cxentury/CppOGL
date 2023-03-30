@@ -49,12 +49,14 @@ void UserParameters::drawEffectsHeader(Scene* scene) {
         ImGui::SameLine(); HelpMarker("Differents effects you can add to change the render");
 
         ImGui::Text("Effects :");
-        ImGui::Checkbox("Bloom", &scene->getBool("bloom"));
-        ImGui::Separator();
+        //ImGui::Checkbox("Bloom", &scene->getBool("bloom"));
+        //ImGui::Separator();
         ImGui::Checkbox("Blur", &scene->getBool("blur"));
         ImGui::Separator();
+        ImGui::Checkbox("Bokeh", &scene->getBool("bokeh"));
+        ImGui::Separator();
         ImGui::Checkbox("Chromatic Aberation", &scene->getBool("chromaticAberation"));
-        
+
         if (ImGui::DragFloat("Red offset", &scene->getProcessing().getChromatic().redOff, 0.01f)) {
             Shader* postProcessing = scene->getShaders().find("postProcessing")->second;
             scene->getProcessing().updateUniforms(*postProcessing);
@@ -68,11 +70,11 @@ void UserParameters::drawEffectsHeader(Scene* scene) {
             scene->getProcessing().updateUniforms(*postProcessing);
         }
 
-        ImGui::Separator();
-        if (ImGui::Checkbox("HDR", &scene->getProcessing().getBool("hdr"))) {
-            Shader* postProcessing = scene->getShaders().find("postProcessing")->second;
-            scene->getProcessing().updateUniforms(*postProcessing);
-        }
+        //ImGui::Separator();
+        //if (ImGui::Checkbox("HDR", &scene->getProcessing().getBool("hdr"))) {
+        //    Shader* postProcessing = scene->getShaders().find("postProcessing")->second;
+        //    scene->getProcessing().updateUniforms(*postProcessing);
+        //}
 
         ImGui::TreePop();
     } else {

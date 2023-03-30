@@ -22,7 +22,7 @@ struct Hdr_t {
 };
 
 struct Effects_t{
-    bool bloom, chromaticAberation, blur, hdr;
+    bool bloom, chromaticAberation, blur, hdr, bokeh;
 };
 
 uniform ChromaticAberation_t cAberation;
@@ -38,10 +38,15 @@ void main() {
         FragColor.g = texture(texture0, textCoord - (direction * cAberation.greenOff)).g;
         FragColor.ba = texture(texture0, textCoord - (direction * cAberation.blueOff)).ba;
     }
+    //This is a bit useless this they all do the same thing but this is going to change since I'm gonne replace
+    //The way effects are handled
     else if (effects.blur) {
         FragColor = texture(texture1, textCoord);
     }
     else if (effects.hdr) {
+        FragColor = texture(texture1, textCoord);
+    }
+    else if(effects.bokeh){
         FragColor = texture(texture1, textCoord);
     }
 }
