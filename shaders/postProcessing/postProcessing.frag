@@ -30,7 +30,6 @@ uniform Effects_t effects;
 
 void main() {
 
-    FragColor = texture(texture0, textCoord);
     if (effects.chromaticAberation) {
         vec2 direction = textCoord - vec2(0.0);
 
@@ -38,15 +37,19 @@ void main() {
         FragColor.g = texture(texture0, textCoord - (direction * cAberation.greenOff)).g;
         FragColor.ba = texture(texture0, textCoord - (direction * cAberation.blueOff)).ba;
     }
-    //This is a bit useless this they all do the same thing but this is going to change since I'm gonne replace
-    //The way effects are handled
-    else if (effects.blur) {
+    else if (effects.blur)
         FragColor = texture(texture1, textCoord);
-    }
-    else if (effects.hdr) {
-        FragColor = texture(texture1, textCoord);
-    }
+
     else if(effects.bokeh){
-        FragColor = texture(texture1, textCoord);
+        int boxSize = 3;
+        //Putting this here until I create a new shader for the bokeh blur
+	    for(int i = -boxSize; i <= boxSize; i++){
+		    for(int j=-boxSize; j <= boxSize; j++)
+			    FragColor+=texture(texture1, textCoord.xy + vec2(i,j) / textureSize(texture1,0));
+	    }
+	    FragColor /= pow(boxSize*2+1,2);
     }
+
+    else
+        FragColor = texture(texture0, textCoord);
 }

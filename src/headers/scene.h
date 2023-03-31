@@ -24,20 +24,10 @@ public:
     ~Scene();
     
     /**
-     * @brief Setup a callback for when the user press a key
-     * 
-     */
-    void initWindowKeyCallback();
-
-    /**
      * @brief Launch the render loop, doesnt initialize anything, just launching the loop
      * 
      */
     void renderLoop();
-
-    // Non sense function
-    // bool& getDrawLights();
-    Camera getCamera();
 
     /**
      * @brief Add a model to the scene
@@ -47,13 +37,6 @@ public:
     void addModel(Model*);
 
     /**
-     * @brief Remove a model to the scene
-     * 
-     * @param model
-    */
-    void removeModel(Model*);
-
-    /**
      * @brief Remove a light to the scene
      * 
      * @param light
@@ -61,13 +44,12 @@ public:
     void addLight(Light*);
 
     /**
-     * @brief Remove a light to the scene
-     * 
+     * @brief Adds a shader to the m_shaders map, taking as key the name of the fragment shader
+     *
      * @param light
     */
-    void removeLight(Light*);
-
-    void addShader(std::string name, Shader* shader);
+    void addShader(std::string vertexPath, std::string fragmentPath);
+    void addShaderFolder(std::string folder);
     void addCubemap(std::string name, CubeMap* cubemap);
     void addFramebuffer(std::string name, Framebuffer* framebuffer);
     void setupScene();
@@ -75,9 +57,8 @@ public:
     std::vector<Light*> getLights();
     std::vector<Model*> getModels();
     PostProcessing& getProcessing();
-    std::map<std::string, Shader*> getShaders();
+    Shader* findShader(std::string name);
     bool& getBool(std::string name);
-    bool& getHdr();
 
     static uint16_t width;
     static uint16_t height;
@@ -86,13 +67,12 @@ private:
     GLFWwindow* m_pWindow;
     DefaultGui m_gui;
     // bool renderOptions_draw_lights = true;
-    std::vector<Light*> lightPool;
-    std::vector<Model*> modelPool;
+    std::vector<Light*> m_lights;
+    std::vector<Model*> m_models;
     std::map<std::string, Shader*> m_shaders;
     std::map<std::string, CubeMap*> m_cubemaps;
     std::map<std::string, Framebuffer*> m_framebuffers;
-    bool hdr;
-    PostProcessing pProcessing;
+    PostProcessing pProcessing{};
 
     /**
      * @brief Init all the libraries and generate a windows
@@ -135,6 +115,8 @@ private:
 
     void drawScene(std::string shaderName);
     
+    void setCallBacks();
+    void setOpenGLOptions();
 };
 
 extern Camera camera;

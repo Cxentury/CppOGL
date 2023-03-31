@@ -38,6 +38,9 @@ void Mesh::configureBuffers() {
 
 }
 void Mesh::draw(Shader& shader) {
+
+	shader.use();
+
 	int diffuseCpt = 0, normalCpt = 0, specularCpt=0, heightCpt = 0, opacityCpt = 0;
 	int counter = 0;
 	std::string samplerName;
@@ -78,7 +81,6 @@ void Mesh::draw(Shader& shader) {
 		}
 	}
 			
-	shader.use();
 	//We set the correct model for the Mesh (this is the localTransform according to its parents, so its world transform)
 	glm::mat4 model = glm::transpose(glm::make_mat4(&this->localTransform.a1));
 	

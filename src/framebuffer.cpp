@@ -20,6 +20,8 @@ Framebuffer::Framebuffer(int width, int height, int nbAttachments, bool depthBuf
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, textureID, 0);
+
 		//Unbind
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}

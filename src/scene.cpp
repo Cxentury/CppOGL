@@ -5,8 +5,9 @@
 #include "headers/pointLight.h"
 #include "headers/directionalLight.h"
 #include "headers/postProcessing.h"
-
 #include <iostream>
+#include <iterator>
+#include <filesystem>
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -55,46 +56,6 @@ void Scene::initGLFW() {
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 }
 
-Camera Scene::getCamera() {
-	return camera;
-}
-
-/*
-bool& Scene::getDrawLights() {
-	return this->renderOptions_draw_lights;
-}
-*/
-
-void Scene::addModel(Model* model) {
-	this->modelPool.push_back(model);
-}
-
-void Scene::removeModel(Model* model) {
-	auto it = std::find(this->modelPool.begin(), this->modelPool.end(), model);
-
-	if (it != this->modelPool.end())
-		this->modelPool.erase(it);
-}
-
-void Scene::addLight(Light* light) {
-	this->lightPool.push_back(light);
-}
-
-void Scene::removeLight(Light* light) {
-	auto it = std::find(this->lightPool.begin(), this->lightPool.end(), light);
-
-	if (it != this->lightPool.end())
-		this->lightPool.erase(it);
-}
-
-std::vector<Light*> Scene::getLights() {
-	return this->lightPool;
-}
-
-std::vector<Model*> Scene::getModels() {
-	return this->modelPool;
-}
-
 GLFWwindow* Scene::createWindow() {
 
 	GLFWwindow* window = glfwCreateWindow(Scene::width, Scene::height, "3D engine", NULL, NULL);
@@ -107,8 +68,6 @@ GLFWwindow* Scene::createWindow() {
 	// Define the created window as the main context
 	glfwMakeContextCurrent(window);
 
-	/*We have to tell OpenGL the size of the rendering window so
-	OpenGL knows how we want to display the data and coordinates with respect to the window*/
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
 	return window;
@@ -120,30 +79,35 @@ void Scene::initGLAD() {
 	}
 }
 
-void Scene::renderLoop() {
-
-	//Adds all lights, models, framebuffers to the scene
-	this->setupScene();
-	this->pProcessing = {};
-	this->hdr = true;
-
-	Model sceneModel{ "models/postProcessing/quad.obj" };
-	glfwSetCursorPosCallback(this->m_pWindow, mouse_callback);
-	glfwSetInputMode(this->m_pWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwSetKeyCallback(this->m_pWindow, key_callback);
+void Scene::setOpenGLOptions() {
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_STENCIL_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+void Scene::setCallBacks() {
+	glfwSetCursorPosCallback(this->m_pWindow, mouse_callback);
+	glfwSetInputMode(this->m_pWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetKeyCallback(this->m_pWindow, key_callback);
+
+}
+void Scene::renderLoop() {
+
+
+	//Adds all lights, models, framebuffers to the scene
+	setupScene();
+	setCallBacks();
+	setOpenGLOptions();
+	
+	Model sceneModel{ "models/postProcessing/quad.obj" };
 
 	//Keep if either of the stencil or depth test fails
 	//and replace if both succeed
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
-	double current = 0;
-	float lastFrame = 0.0f;
-
+	float lastFrame = 0.0f, current = 0.0f;
 	int frame = 0;
 
 	this->m_gui.init(m_pWindow);
@@ -164,27 +128,17 @@ void Scene::renderLoop() {
 
 		if (pProcessing.getBool("blur")) {
 			//draw the blured scene
-			Shader* blur = m_shaders.find("blur")->second;
+			Shader* blur = m_shaders.find("boxBlur")->second;
 			fb->setInputTextures(*blur, 1);
 			fb->setOuputTexture(1);
 			sceneModel.draw(*blur);
 		}
-
-		else if (pProcessing.getBool("hdr")) {
-			// Draw hdr scene
-			Shader* hdr = m_shaders.find("hdr")->second;
-			fb->setInputTextures(*hdr, 1);
-			fb->setOuputTexture(1);
-			sceneModel.draw(*hdr);
-		}
-		else if (pProcessing.getBool("bokeh")) {
-			// Draw bokeh scene
+		else if(pProcessing.getBool("bokeh")){
 			Shader* bokeh = m_shaders.find("bokeh")->second;
 			fb->setInputTextures(*bokeh, 1);
 			fb->setOuputTexture(1);
 			sceneModel.draw(*bokeh);
 		}
-
 		Shader* pProcessingShader = m_shaders.find("postProcessing")->second;
 		pProcessing.updateUniforms(*pProcessingShader);
 
@@ -215,7 +169,7 @@ void Scene::drawScene(std::string shaderName) {
 
 	//Prevent writing to the stencil buffer
 	glStencilMask(0x00);
-	m_cubemaps.find("yokohama")->second->draw(camera.getLookAtMatrix(), projection);
+	m_cubemaps.find("ocean")->second->draw(camera.getLookAtMatrix(), projection);
 
 	//Must use the shader before calling glUniform()
 	Shader* shader = m_shaders.find(shaderName)->second;
@@ -226,7 +180,7 @@ void Scene::drawScene(std::string shaderName) {
 	shader->setMatrix4("view", camera.getLookAtMatrix());
 	shader->setMatrix4("projection", projection);
 
-	Shader* outlineShader = m_shaders.find("outlineShader")->second;
+	Shader* outlineShader = m_shaders.find("outline")->second;
 	outlineShader->use();
 	outlineShader->setMatrix4("view", camera.getLookAtMatrix());
 	outlineShader->setMatrix4("projection", projection);
@@ -235,9 +189,8 @@ void Scene::drawScene(std::string shaderName) {
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
 	glStencilMask(0xFF);
 	for (Model* model : this->getModels()) {
-		if (model->getActive()) {
+		if (model->getActive())
 			model->draw(*shader);
-		}
 	}
 
 	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
@@ -253,7 +206,7 @@ void Scene::drawScene(std::string shaderName) {
 
 
 	//Lights
-	Shader* lightShader = m_shaders.find("lightShader")->second;
+	Shader* lightShader = m_shaders.find("light")->second;
 	lightShader->use();
 	lightShader->setMatrix4("view", camera.getLookAtMatrix());
 	lightShader->setMatrix4("projection", projection);
@@ -267,32 +220,50 @@ void Scene::drawScene(std::string shaderName) {
 }
 
 void Scene::setupScene() {
-	//this->addLight(new PointLight(glm::vec3(17.0f, 17.0f, -20.0f), glm::vec3(1.0f, 1.0f, 1.0f), 2.0f, 0.5f, 0.4f,1.0f,0.014, 0.0007));
-	this->addLight(new PointLight(glm::vec3(0.0f, 0.2f, 10.0f), glm::vec3(0.949f, 0.341f, 0.675f)));
-	this->addLight(new DirectionalLight(glm::vec3(-0.2f, -1.0f, -0.3f), glm::vec3(0.5f, 0.5f, 0.5f), 0.5, 0.5));
-	//this->addModel(new Model("models/backpack/backpack.obj", glm::vec3(0.0f, -2.0f, 0.0f)));
-	this->addModel(new Model("models/fortressScaled/noSky.obj", glm::vec3(0.0f, -2.0f, -15.0f), 1.0f, false));
-	//this->addModel(new Model("models/higokumaru-honkai-impact-3rd/source/Higokumaru.fbx", glm::vec3(0.0f, 0.0f, -12.0f), 0.55f, false));
-
-
-	this->addShader("default", new Shader{ "shaders/default.vs", "shaders/default.fs" });
-	this->addShader("postProcessing", new Shader{ "shaders/postProcessing.vs", "shaders/postProcessing/postProcessing.fs" });
-	this->addShader("blur", new Shader{ "shaders/postProcessing.vs", "shaders/postProcessing/boxBlur.frag" });
-	this->addShader("bokeh", new Shader{ "shaders/postProcessing.vs", "shaders/postProcessing/bokeh.frag" });
-	this->addShader("hdr", new Shader{ "shaders/postProcessing.vs", "shaders/postProcessing/hdrShader.fs" });
-	this->addShader("outlineShader", new Shader{ "shaders/outline.vs", "shaders/outline.fs" });
-	this->addShader("lightShader", new Shader{ "shaders/default.vs", "shaders/light.fs" });
 	
-	this->addCubemap("yokohama", new CubeMap{ "models/skybox/yokohama",std::vector<std::string>{"posx.jpg","negx.jpg","posy.jpg","negy.jpg","posz.jpg","negz.jpg"} }),
+	this->addLight(new PointLight(glm::vec3(0.0f, 0.2f, 10.0f)));
+	this->addLight(new DirectionalLight(glm::vec3(-0.2f, -1.0f, -0.3f), glm::vec3(0.5f, 0.5f, 0.5f), 0.5, 0.5));
+	this->addModel(new Model("models/fortressScaled/noSky.obj", glm::vec3(0.0f, -2.0f, -15.0f), 1.0f, false));
+
+
+	this->addShader("shaders/default.vs", "shaders/default.fs" );
+	this->addShader("shaders/default.vs", "shaders/light.fs");
+	this->addShader("shaders/outline.vs", "shaders/outline.fs");
+	this->addShaderFolder("shaders/postProcessing");
+	
+	this->addCubemap("ocean", new CubeMap{ "models/skybox/ocean&mountains",std::vector<std::string>{"posx.jpg","negx.jpg","posy.jpg","negy.jpg","posz.jpg","negz.jpg"} }),
 	
 	this->addFramebuffer("framebuffer", new Framebuffer{ Scene::width, Scene::height, 2, false});
 }
 
 
 
-void Scene::addShader(std::string name, Shader* shader) {
-	this->m_shaders.insert({ name, shader });
+void Scene::addShader(std::string vertexPath, std::string fragmentPath) {
+	int lastOf = fragmentPath.find_last_of('/');
+	//skips '/'
+	lastOf++;																	
+	std::string name = fragmentPath.substr(lastOf, fragmentPath.find_last_of('.') - lastOf);
+	this->m_shaders.insert({ name, new Shader{vertexPath, fragmentPath} });
 }
+
+void Scene::addShaderFolder(std::string folder) {
+	
+	std::vector<std::string> paths;
+	std::string currentFile;
+	std::string vertexPath;
+
+	for (const auto& entry : std::filesystem::directory_iterator(folder)) {
+		currentFile = entry.path().generic_string();
+		if (entry.path().generic_string().find(".vertex") != std::string::npos)
+			vertexPath = currentFile;
+		else
+			paths.push_back(currentFile);
+	}
+	
+	for (const std::string& fragmentPath : paths)
+		addShader(vertexPath, fragmentPath);
+}
+
 void Scene::addCubemap(std::string name, CubeMap* cubemap) {
 	this->m_cubemaps.insert({ name, cubemap });
 }
@@ -322,13 +293,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		camera_control = !camera_control;
-
-		if (!camera_control) {
-			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-		}
-		else {
-			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-		}
+		glfwSetInputMode(window, GLFW_CURSOR, camera_control ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
 	}
 }
 
@@ -340,10 +305,22 @@ PostProcessing& Scene::getProcessing() {
 	return this->pProcessing;
 }
 
-std::map<std::string, Shader*> Scene::getShaders() {
-	return this->m_shaders;
+Shader* Scene::findShader(std::string name) {
+	return this->m_shaders.find(name)->second;
 }
 
-bool& Scene::getHdr() {
-	return this->hdr;
+void Scene::addModel(Model* model) {
+	this->m_models.push_back(model);
+}
+
+void Scene::addLight(Light* light) {
+	this->m_lights.push_back(light);
+}
+
+std::vector<Light*> Scene::getLights() {
+	return this->m_lights;
+}
+
+std::vector<Model*> Scene::getModels() {
+	return this->m_models;
 }

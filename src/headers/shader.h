@@ -19,7 +19,7 @@ public:
      * @param vertexPath The path to the vertex shader
      * @param fragmentPath The path to the fragment shader
      */
-    Shader(const char *vertexPath, const char *fragmentPath);
+    Shader(std::string vertexPath, std::string fragmentPath);
 
     /**
      * @brief Tells opengl to use this Shader as the program
