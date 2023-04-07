@@ -51,7 +51,7 @@ void UserParameters::drawEffectsHeader(Scene* scene) {
         ImGui::Separator();
         ImGui::Checkbox("Bokeh", &scene->getBool("bokeh"));
         ImGui::Separator();
-        ImGui::Checkbox("Chromatic Aberation", &scene->getBool("chromaticAberation"));
+        ImGui::Checkbox("Chromatic Aberration", &scene->getBool("chromaticAberration"));
 
         if (ImGui::DragFloat("Red offset", &scene->getProcessing().getChromatic().redOff, 0.001f, -0.03f, 0.03f)) {
             Shader* postProcessing = scene->findShader("postProcessing");
@@ -235,8 +235,11 @@ void UserParameters::drawSelectedLightOptions(Light* light) {
     ImGui::Checkbox("Active", &light->getActive());
 
     std::vector<Triple<std::string, std::string, float &>> options = light->getOptions();
-            
+
+    ImGui::DragFloat("Scale: ", &light->getScale(), 0.1f,0.0f,2.0f);
+    ImGui::Separator();
     ImGui::ColorEdit3("color 3", value_ptr(light->getColor()));
+
     drawLightPositionsSlider(light);
     
     for (Triple<std::string, std::string, float&>& option : options) {

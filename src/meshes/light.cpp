@@ -34,3 +34,7 @@ glm::vec3& Light::getColor() {
 bool& Light::getActive() {
     return this->activated;
 }
+
+float& Light::getScale() {
+    return this->scale;
+}

@@ -9,7 +9,7 @@ uniform sampler2D texture0;
 //postProcessed scene's texture;
 uniform sampler2D texture1;
 
-struct ChromaticAberation_t {
+struct ChromaticAberration_t {
     float redOff, greenOff, blueOff;
 };
 
@@ -22,20 +22,20 @@ struct Hdr_t {
 };
 
 struct Effects_t{
-    bool bloom, chromaticAberation, blur, hdr, bokeh;
+    bool bloom, chromaticAberration, blur, hdr, bokeh;
 };
 
-uniform ChromaticAberation_t cAberation;
+uniform ChromaticAberration_t cAberration;
 uniform Effects_t effects;
 
 void main() {
 
-    if (effects.chromaticAberation) {
+    if (effects.chromaticAberration) {
         vec2 direction = textCoord - vec2(0.0);
 
-        FragColor.r = texture(texture0, textCoord - (direction * cAberation.redOff)).r;
-        FragColor.g = texture(texture0, textCoord - (direction * cAberation.greenOff)).g;
-        FragColor.ba = texture(texture0, textCoord - (direction * cAberation.blueOff)).ba;
+        FragColor.r = texture(texture0, textCoord - (direction * cAberration.redOff)).r;
+        FragColor.g = texture(texture0, textCoord - (direction * cAberration.greenOff)).g;
+        FragColor.ba = texture(texture0, textCoord - (direction * cAberration.blueOff)).ba;
     }
     else if (effects.blur)
         FragColor = texture(texture1, textCoord);
