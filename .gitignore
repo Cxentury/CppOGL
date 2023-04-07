@@ -43,5 +43,5 @@ build/
 log.txt
 x64/
 .VSCodeCounter/
-
+models/
 *.ini

@@ -10,6 +10,14 @@ uniform sampler2D diffuseMap1;
 uniform sampler2D specularMap0;
 uniform sampler2D opacityMap0;
 
+//checks if fragment should use a material or a texture color 
+uniform bool hasMaterial = false;
+
+struct Material{
+    float specularExponent, opacity;
+    vec3 diffuse, ambiant, specular;
+};
+
 struct Textures{
     bool diffuse, specular, opacity, normal;
 };
@@ -32,6 +40,7 @@ struct DirLight{
 uniform PointLight pLights[MAX_LIGHTS];
 uniform DirLight dLight[MAX_LIGHTS];
 uniform Textures maps;
+uniform Material material;
 
 uniform vec3 viewPos;
 vec3 pointLight(PointLight plight, vec3 normalN);
@@ -85,10 +94,21 @@ vec3 pointLight(PointLight pLight, vec3 normalN){
     
     float distance = length(pLight.lightPos - fragPos);
     float attenuation = 1.0 / (pLight.constant + pLight.linear * distance + pLight.quadratic * (distance * distance));
+    
+    vec3 ambiant, specular, diffuse;
 
-    vec3 ambiant = pLight.ambiantStr * diffuseTexture * attenuation;
-    vec3 specular = pLight.specularStr * specAmount * pLight.lightColor * vec3(texture(specularMap0, textCoord)) * attenuation;
-    vec3 diffuse = diffuseShading * pLight.lightColor * diffuseTexture * attenuation;
+    if(hasMaterial){
+        float specAmount = pow(max(dot(viewDirection,reflectDirection),0.0),material.specularExponent);
+        specular = pLight.specularStr * specAmount * pLight.lightColor * material.specular * attenuation;
+        ambiant = pLight.ambiantStr * material.ambiant * attenuation;
+        diffuse = diffuseShading * pLight.lightColor * material.diffuse * attenuation;
+    }
+    else{
+        float specAmount = pow(max(dot(viewDirection,reflectDirection),0.0),32);
+        specular = pLight.specularStr * specAmount * pLight.lightColor * vec3(texture(specularMap0, textCoord)) * attenuation;
+        ambiant = pLight.ambiantStr * diffuseTexture * attenuation;
+        diffuse = diffuseShading * pLight.lightColor * diffuseTexture * attenuation;
+    }
     
     //ambiant and diffuse lightning
     return (ambiant + diffuse + specular);
@@ -110,11 +130,24 @@ vec3 directionalLight(DirLight light, vec3 normalN){
 
     vec3 viewDirection = normalize(viewPos - fragPos);
     vec3 reflectDirection = reflect(-lightDir,normalN);
-    float specAmount = pow(max(dot(viewDirection,reflectDirection),0.0),32);
-    
-    vec3 specular = light.specularStr * specAmount * vec3(texture(specularMap0,textCoord));
-    vec3 diffuse = diffuseShading * light.lightColor * diffuseTexture;
-    vec3 ambiant = light.ambiantStr * diffuseTexture;
+
+    float specAmount;
+    vec3 ambiant, specular, diffuse;
+
+    if(hasMaterial){
+        specAmount = pow(max(dot(viewDirection,reflectDirection),0.0),material.specularExponent);
+
+        ambiant = light.ambiantStr * light.lightColor * material.diffuse;
+        specular = light.specularStr * light.lightColor * specAmount * material.specular;
+        diffuse = diffuseShading  * light.lightColor * material.diffuse;
+    }
+    else{
+        specAmount = pow(max(dot(viewDirection, reflectDirection),0.0),32);
+
+        ambiant = light.ambiantStr * light.lightColor * vec3(texture(diffuseMap0,textCoord));
+        diffuse = diffuseShading * light.lightColor * vec3(texture(diffuseMap0,textCoord));
+        specular = light.specularStr * specAmount * vec3(texture(specularMap0,textCoord));
+    }
 
     return (ambiant + diffuse + specular);
 }

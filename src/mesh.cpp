@@ -2,12 +2,13 @@
 
 Mesh::Mesh() {}
 
-Mesh::Mesh(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std::vector<Texture> textures, aiMatrix4x4 localTransform, glm::vec3 position) {
+Mesh::Mesh(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std::vector<Texture> textures, aiMatrix4x4 localTransform, glm::vec3 position, Material material) {
 	this->m_vertices = vertices;
 	this->m_indices = indices;
 	this->m_textures = textures;
 	this->localTransform = localTransform;
 	this->position = position;
+	this->m_material = material;
 	configureBuffers();
 }
 
@@ -40,38 +41,64 @@ void Mesh::configureBuffers() {
 void Mesh::draw(Shader& shader) {
 
 	shader.use();
+	setTextures(shader);
+	setMaterials(shader);
+			
+	//We set the correct model for the Mesh (this is the localTransform according to its parents, so its world transform)
+	glm::mat4 model = glm::transpose(glm::make_mat4(&this->localTransform.a1));
+	
+	//scaling the model down (primarily useful for fbx models)
+	//Models with an x of 1 are usually of good size so we scale by that factor
+	//this does not work on all models though
+	//model = glm::scale(model, glm::vec3(std::min(1.0f / model[0].x, 1.0f)));
 
-	int diffuseCpt = 0, normalCpt = 0, specularCpt=0, heightCpt = 0, opacityCpt = 0;
+	model = glm::scale(model, glm::vec3(this->scale));
+	model = glm::translate(model, this->position);
+
+	//Matrix used to transform normal vectors to world coordinates
+	glm::mat3 normalMatrix = glm::transpose(glm::inverse(model));
+
+
+	shader.setMatrix3("normalMatrix", normalMatrix);
+	shader.setMatrix4("model", model);
+
+	glBindVertexArray(this->m_VAO);
+	glDrawElements(GL_TRIANGLES, this->m_indices.size(), GL_UNSIGNED_INT,0);
+
+}
+
+void Mesh::setTextures(Shader& shader) {
+	int diffuseCpt = 0, normalCpt = 0, specularCpt = 0, heightCpt = 0, opacityCpt = 0;
 	int counter = 0;
 	std::string samplerName;
 
 	for (size_t i = 0; i < this->m_textures.size(); i++)
 	{
 		glActiveTexture(GL_TEXTURE0 + i);
-		switch (this->m_textures[i].getType()) { 
-			case aiTextureType_DIFFUSE:
-				samplerName = "diffuseMap";
-				counter = diffuseCpt++;
-				break;
-			case aiTextureType_NORMALS:
-				samplerName = "normalMap";
-				counter = normalCpt++;
-				break;
-			case aiTextureType_SPECULAR:
-				samplerName = "specularMap";
-				counter = specularCpt++;
-				break;
-			case aiTextureType_HEIGHT:
-				samplerName = "heightMap";
-				counter = heightCpt++;
-				break;
-			case aiTextureType_OPACITY:
-				samplerName = "opacityMap";
-				counter = opacityCpt++;
-				break;
-			default:
-				counter = -1;
-				samplerName = "";
+		switch (this->m_textures[i].getType()) {
+		case aiTextureType_DIFFUSE:
+			samplerName = "diffuseMap";
+			counter = diffuseCpt++;
+			break;
+		case aiTextureType_NORMALS:
+			samplerName = "normalMap";
+			counter = normalCpt++;
+			break;
+		case aiTextureType_SPECULAR:
+			samplerName = "specularMap";
+			counter = specularCpt++;
+			break;
+		case aiTextureType_HEIGHT:
+			samplerName = "heightMap";
+			counter = heightCpt++;
+			break;
+		case aiTextureType_OPACITY:
+			samplerName = "opacityMap";
+			counter = opacityCpt++;
+			break;
+		default:
+			counter = -1;
+			samplerName = "";
 		}
 
 		int location = glGetUniformLocation(shader.getId(), (samplerName + std::to_string(counter)).c_str());
@@ -80,33 +107,24 @@ void Mesh::draw(Shader& shader) {
 			glBindTexture(GL_TEXTURE_2D, this->m_textures[i].getID());
 		}
 	}
-			
-	//We set the correct model for the Mesh (this is the localTransform according to its parents, so its world transform)
-	glm::mat4 model = glm::transpose(glm::make_mat4(&this->localTransform.a1));
-	
-	//scaling the model down (primarily useful for fbx models)
-	//Models with an x of 1 are usually of good size so we scale by that factor
-	//this does not work on all models though
-	model = glm::scale(model, glm::vec3(std::min(1.0f / model[0].x, 1.0f)));
 
-	model = glm::scale(model, glm::vec3(this->scale));
-	model = glm::translate(model, this->position);
-
-	//Matrix used to transform normal vectors to world coordinates
-	glm::mat3 normalMatrix = glm::transpose(glm::inverse(model));
-	
 	shader.setBool("maps.diffuse", diffuseCpt);
 	shader.setBool("maps.height", heightCpt);
 	shader.setBool("maps.opacity", opacityCpt);
 	shader.setBool("maps.normal", normalCpt);
 
-	shader.setMatrix3("normalMatrix", normalMatrix);
-	shader.setMatrix4("model", model);
-
-	glBindVertexArray(this->m_VAO);
-	glDrawElements(GL_TRIANGLES, this->m_indices.size(), GL_UNSIGNED_INT,0);
 	//Reset to default
 	glActiveTexture(GL_TEXTURE0);
+}
+
+void Mesh::setMaterials(Shader& shader) {
+
+	shader.setBool("hasMaterial", this->m_material.hasColor());
+	shader.setVec3("material.diffuse", m_material.diffuse);
+	shader.setVec3("material.specular", m_material.specular);
+	shader.setVec3("material.ambiant", m_material.ambiant);
+	shader.setFloat("material.specularExponent", m_material.specularExponent);
+	shader.setFloat("material.opacity", m_material.opacity);
 }
 
 std::vector<Vertex> Mesh::getVertices() {

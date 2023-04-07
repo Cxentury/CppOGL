@@ -4,11 +4,11 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>          
 #include <assimp/postprocess.h>
+#include "material.h"
 
 #include "mesh.h"
 #include "vector"
 #include "iostream"
-
 class Model
 {
 public:
@@ -150,6 +150,9 @@ public:
 	 * @return false If the model is the model should not be drawn
 	 */
 	bool& getActive();
+
+	void setMeshTextures(std::vector<Texture>& textures, aiMaterial* mat);
+	Material setMaterialColors(Material& mat, aiMaterial* material);
 
 private:
 	std::string m_directory;
