@@ -3,7 +3,7 @@
 CubeMap::CubeMap(std::vector<std::string> paths) {
 	this->m_texture = Texture::loadCubemap(paths);
 	this->configureMesh();
-    this->shader = std::make_unique<Shader>("shaders/cubemap.vs","shaders/cubemap.fs");
+    this->shader = std::make_unique<Shader>("shaders/cubemap.vert","shaders/cubemap.frag");
 }
 
 CubeMap::CubeMap(std::string dir, std::vector<std::string> paths){
@@ -12,7 +12,7 @@ CubeMap::CubeMap(std::string dir, std::vector<std::string> paths){
 		path = dir + "/" + path;
 	}
 	this->m_texture = Texture::loadCubemap(paths);
-    this->shader = std::make_unique<Shader>("shaders/cubemap.vs","shaders/cubemap.fs");
+    this->shader = std::make_unique<Shader>("shaders/cubemap.vert","shaders/cubemap.frag");
 	this->configureMesh();
 }
 
