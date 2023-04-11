@@ -33,6 +33,7 @@ void UserParameters::render(Scene* scene) {
         }
         
         if (ImGui::CollapsingHeader("Scène")) {
+            drawDisplayHeader(scene);
             drawLightHeader(scene);
             drawModelHeader(scene);
             drawEffectsHeader(scene);
@@ -44,9 +45,21 @@ void UserParameters::render(Scene* scene) {
     }
 }
 
+void UserParameters::drawDisplayHeader(Scene* scene) {
+    if (ImGui::TreeNode("display")) {
+        if (ImGui::DragFloat("Gamma", &scene->getProcessing().getGamma(), 0.1f, 1.0f,4.0f)) {
+            Shader* postProcessing = scene->findShader("postProcessing");
+            scene->getProcessing().updateUniforms(*postProcessing);
+        }
+
+        ImGui::TreePop();
+    }
+}
+
 void UserParameters::drawEffectsHeader(Scene* scene) {
     if (ImGui::TreeNode("Effects")) {
-
+        ImGui::Checkbox("HDR", &scene->getBool("hdr"));
+        ImGui::Separator();
         ImGui::Checkbox("Blur", &scene->getBool("blur"));
         ImGui::Separator();
         ImGui::Checkbox("Bokeh", &scene->getBool("bokeh"));

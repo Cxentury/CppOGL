@@ -27,6 +27,7 @@ struct Effects_t{
 
 uniform ChromaticAberration_t cAberration;
 uniform Effects_t effects;
+uniform float gamma;
 
 void main() {
 
@@ -48,6 +49,12 @@ void main() {
 			    FragColor+=texture(texture1, textCoord.xy + vec2(i,j) / textureSize(texture1,0));
 	    }
 	    FragColor /= pow(boxSize*2+1,2);
+    }
+    else if(effects.hdr){
+        vec3 hdrColor = texture(texture0, textCoord).rgb;
+	    vec3 toneMap = hdrColor / (hdrColor + vec3(1.0));
+        toneMap = pow(toneMap, vec3(1.0 / gamma));
+	    FragColor = vec4(toneMap,1.0);
     }
 
     else

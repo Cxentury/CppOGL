@@ -25,6 +25,7 @@ public:
     ChromaticAberration_t& getChromatic();
     Bloom_t& getBloom();
     Hdr_t& getHdr();
+    float& getGamma();
     bool& getBool(std::string name);
     void updateUniforms(Shader& shader);
 private:
@@ -32,6 +33,7 @@ private:
     ChromaticAberration_t cAberration;
     Bloom_t bloom; 
     Hdr_t hdr;
+    float gamma = 1.0f;
 };
 
 #endif // POST_PROCESSING_HEADER
