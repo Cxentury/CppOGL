@@ -16,6 +16,13 @@ CubeMap::CubeMap(std::string dir, std::vector<std::string> paths){
 	this->configureMesh();
 }
 
+CubeMap::CubeMap(std::string path) {
+    this->m_texture = Texture::loadCubemapHDR(path);
+    this->shader = std::make_unique<Shader>("shaders/cubemap.vert", "shaders/cubemap.frag");
+    this->hdr = true;
+    this->configureMesh();
+}
+
 void CubeMap::configureMesh() {
     this->m_vertices = {
     -1.0f,  1.0f, -1.0f,
@@ -87,10 +94,32 @@ void CubeMap::draw(glm::mat4 view, glm::mat4 projection) {
     this->shader->use();
     this->shader->setMatrix4("view", glm::mat4(glm::mat3(view)));
     this->shader->setMatrix4("projection", projection);
+    this->shader->setFloat("hdr", hdr);
+
+    GLenum textureType = GL_TEXTURE_CUBE_MAP;
+    /*this->shader->setFloat("skybox", 0);
+    if (hdr) {
+        glActiveTexture(GL_TEXTURE1);
+        this->shader->setFloat("skyboxHDR", 1);
+        textureType = GL_TEXTURE_2D;
+    }
+    else
+        glActiveTexture(GL_TEXTURE0);
+    */
 
     glBindVertexArray(this->m_VAO);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, this->m_texture.getID());
+    textureType = GL_TEXTURE_2D;
+    
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    glActiveTexture(GL_TEXTURE0);
+    
+    //glActiveTexture(GL_TEXTURE1);
+    glBindTexture(textureType, this->m_texture.getID());
+
     glDrawArrays(GL_TRIANGLES, 0, this->m_vertices.size());
     
+    
+    glBindTexture(textureType, 0);
+    glActiveTexture(GL_TEXTURE0);
     glDepthMask(true);
 }

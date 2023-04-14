@@ -222,16 +222,21 @@ void Scene::drawScene(std::string shaderName) {
 void Scene::setupScene() {
 	
 	this->addLight(new PointLight(glm::vec3(0.0f, 0.2f, 10.0f)));
+	this->addLight(new PointLight(glm::vec3(0.0f, 0.2f, 10.0f)));
+	this->addLight(new PointLight(glm::vec3(0.0f, 0.2f, 10.0f)));
+	this->addLight(new PointLight(glm::vec3(0.0f, 0.2f, 10.0f)));
+	this->addLight(new PointLight(glm::vec3(0.0f, 0.2f, 10.0f)));
 	this->addLight(new DirectionalLight(glm::vec3(-0.2f, -1.0f, -0.3f), glm::vec3(0.5f, 0.5f, 0.5f), 0.5, 0.5));
 	this->addModel(new Model("models/fortressScaled/noSky.obj", glm::vec3(0.0f, -2.0f, -15.0f), 1.0f, false));
 
 
-	this->addShader("shaders/default.vs", "shaders/default.fs" );
-	this->addShader("shaders/default.vs", "shaders/light.fs");
-	this->addShader("shaders/outline.vs", "shaders/outline.fs");
+	this->addShader("shaders/default.vert", "shaders/default.frag" );
+	this->addShader("shaders/default.vert", "shaders/light.frag");
+	this->addShader("shaders/outline.vert", "shaders/outline.frag");
 	this->addShaderFolder("shaders/postProcessing");
 	
-	this->addCubemap("ocean", new CubeMap{ "models/skybox/ocean&mountains",std::vector<std::string>{"posx.jpg","negx.jpg","posy.jpg","negy.jpg","posz.jpg","negz.jpg"} }),
+	//this->addCubemap("ocean", new CubeMap{ "models/skybox/ocean&mountains",std::vector<std::string>{"posx.jpg","negx.jpg","posy.jpg","negy.jpg","posz.jpg","negz.jpg"} }),
+	this->addCubemap("ocean", new CubeMap{ "models/skybox/hdr/industrial_sunset_puresky_4k.hdr"} ),
 	
 	this->addFramebuffer("framebuffer", new Framebuffer{ Scene::width, Scene::height, 2, false});
 }
@@ -254,7 +259,7 @@ void Scene::addShaderFolder(std::string folder) {
 
 	for (const auto& entry : std::filesystem::directory_iterator(folder)) {
 		currentFile = entry.path().generic_string();
-		if (entry.path().generic_string().find(".vertex") != std::string::npos)
+		if (entry.path().generic_string().find(".vert") != std::string::npos)
 			vertexPath = currentFile;
 		else
 			paths.push_back(currentFile);

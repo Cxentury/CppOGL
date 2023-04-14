@@ -41,7 +41,7 @@ public:
 	 * @return Texture
 	 */
 	static Texture loadCubemap(std::vector<std::string> paths);
-
+	static Texture loadCubemapHDR(std::string path);
 	/**
 	 * @brief Get the Type of the texture
 	 * All different types of texture are specified in the material header of the assimp library

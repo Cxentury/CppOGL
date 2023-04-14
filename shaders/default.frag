@@ -52,12 +52,10 @@ void main() {
     vec3 lightOutput = vec3(0.0);
 
     for(int i = 0; i < MAX_LIGHTS; i++){
-        if(pLights[i].activeLight == true){
+        if(pLights[i].activeLight == true)
             lightOutput += pointLight(pLights[i], normalN);
-        }
-        if(dLight[i].activeLight == true){
+        if(dLight[i].activeLight == true)
             lightOutput += directionalLight(dLight[i], normalN);
-        }
     }
     
     if(maps.opacity)

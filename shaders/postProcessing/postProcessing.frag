@@ -30,7 +30,6 @@ uniform Effects_t effects;
 uniform float gamma;
 
 void main() {
-
     if (effects.chromaticAberration) {
         vec2 direction = textCoord - vec2(0.0);
 
