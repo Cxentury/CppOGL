@@ -3,7 +3,7 @@
 out vec4 FragColor;
 
 in vec3 textCoords;
-//uniform samplerCube skybox;
+uniform samplerCube skybox;
 uniform sampler2D skyboxHDR;
 uniform bool hdr;
 
@@ -21,8 +21,8 @@ void main(){
 		vec2 uv = sampleSpherical(normalize(textCoords));
 		color = texture(skyboxHDR, uv).rgb;
 	}
-//	else
-//		color = texture(skybox, textCoords).rgb;
+	else
+		color = texture(skybox, textCoords).rgb;
 
 	FragColor = vec4(color,1.0);
 }

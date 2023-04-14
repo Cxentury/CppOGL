@@ -222,10 +222,10 @@ void Scene::drawScene(std::string shaderName) {
 void Scene::setupScene() {
 	
 	this->addLight(new PointLight(glm::vec3(0.0f, 0.2f, 10.0f)));
-	this->addLight(new PointLight(glm::vec3(0.0f, 0.2f, 10.0f)));
-	this->addLight(new PointLight(glm::vec3(0.0f, 0.2f, 10.0f)));
-	this->addLight(new PointLight(glm::vec3(0.0f, 0.2f, 10.0f)));
-	this->addLight(new PointLight(glm::vec3(0.0f, 0.2f, 10.0f)));
+	this->addLight(new PointLight(glm::vec3(0.1f, 0.2f, 10.0f)));
+	this->addLight(new PointLight(glm::vec3(0.2f, 0.2f, 10.0f)));
+	this->addLight(new PointLight(glm::vec3(0.3f, 0.2f, 10.0f)));
+	this->addLight(new PointLight(glm::vec3(0.4f, 0.2f, 10.0f)));
 	this->addLight(new DirectionalLight(glm::vec3(-0.2f, -1.0f, -0.3f), glm::vec3(0.5f, 0.5f, 0.5f), 0.5, 0.5));
 	this->addModel(new Model("models/fortressScaled/noSky.obj", glm::vec3(0.0f, -2.0f, -15.0f), 1.0f, false));
 
@@ -298,6 +298,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		camera_control = !camera_control;
+		if (camera_control)
+			firstMouse = true;
 		glfwSetInputMode(window, GLFW_CURSOR, camera_control ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
 	}
 }
