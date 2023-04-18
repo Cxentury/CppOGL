@@ -68,7 +68,7 @@ Texture Texture::loadCubemap(std::vector<std::string> paths)
             break;
         }
 
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, data);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, nrChannels, width, height, 0, nrChannels, GL_FLOAT, data);
         stbi_image_free(data);
     }
 

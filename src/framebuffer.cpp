@@ -1,7 +1,9 @@
 #include "headers/framebuffer.h"
 #include "headers/logger.h"
 
-Framebuffer::Framebuffer(int width, int height, int nbAttachments, bool depthBuffer)
+Framebuffer::Framebuffer() {}
+
+Framebuffer::Framebuffer(int width, int height, int nbAttachments, bool depthBuffer, GLenum mode, GLenum wrapping)
 {
 	this->m_width = width;
 	this->m_height = height;
@@ -17,8 +19,12 @@ Framebuffer::Framebuffer(int width, int height, int nbAttachments, bool depthBuf
 
 		glBindTexture(GL_TEXTURE_2D, textureID);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mode);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mode);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapping);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapping);
 
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, textureID, 0);
 
@@ -105,4 +111,8 @@ void Framebuffer::setInputTextures(Shader& shader, int size) {
 void Framebuffer::setOuputTexture(int position){
 	//attach to framebuffer
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->colorAttachements[position], 0);
+}
+
+int Framebuffer::getTextureID(int position) {
+	return this->colorAttachements[position];
 }
