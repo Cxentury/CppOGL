@@ -2,25 +2,25 @@
 #include "headers/SSAO.h"
 
 SSAO::SSAO(int width, int height) {
-	this->gBuffer = Framebuffer{ width, height, 3, false, GL_NEAREST, GL_CLAMP_TO_EDGE };
+	createKernel(64);
+	genTexturesAndFB(width, height, 16);
 }
 
 void SSAO::createKernel(int length) {
 	std::uniform_real_distribution<float> randomFloats(0.0f, 1.0f);
 	std::default_random_engine engine;
-	std::vector<glm::vec3> kernel;
-	
+
 	float scale;
 	for (unsigned int i = 0; i < length; i++)
 	{
-		glm::vec3 sample (randomFloats(engine) * 2.0f - 1.0f, randomFloats(engine) * 2.0f - 1.0f, randomFloats(engine));
+		glm::vec3 sample(randomFloats(engine) * 2.0f - 1.0f, randomFloats(engine) * 2.0f - 1.0f, randomFloats(engine));
 		sample = glm::normalize(sample);
 
 		scale = (float)i / 64.0f;
-		scale = lerp(0.1,1.0,scale);
+		scale = lerp(0.1, 1.0, scale);
 		sample *= scale;
-		
-		kernel.push_back(sample);
+
+		this->kernel.push_back(sample);
 	}
 }
 
@@ -29,7 +29,7 @@ float SSAO::lerp(float a, float b, float f) {
 }
 
 void SSAO::genTexturesAndFB(int width, int height, int length) {
-	
+
 	//Noise
 	std::uniform_real_distribution<float> randomFloats(0.0f, 1.0f);
 	std::default_random_engine engine;
@@ -68,19 +68,26 @@ void SSAO::genTexturesAndFB(int width, int height, int length) {
 
 }
 
-void SSAO::draw(Model& model) {
+void SSAO::draw(Framebuffer* gBuffer, Shader* shader, glm::mat4& projection) {
 
-	glBindFramebuffer(GL_FRAMEBUFFER,this->frameBuffer);
+	shader->use();
+	shader->setInt("texPosition", 0);
+	shader->setInt("texNormal", 1);
+	shader->setInt("texNoise", 2);
 
 	//position
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, this->gBuffer.getTextureID(0));
-	
+	glBindTexture(GL_TEXTURE_2D, gBuffer->getTextureID(0));
+
 	//normal
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, this->gBuffer.getTextureID(1));	
-	
-	//noise
+	glBindTexture(GL_TEXTURE_2D, gBuffer->getTextureID(1));
+
 	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, this->noiseTexture);
+	glBindTexture(GL_TEXTURE_2D, noiseTexture);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glUniform3fv(glGetUniformLocation(shader->getId(), "samples"), this->kernel.size(), glm::value_ptr(this->kernel[0]));
+	shader->setMatrix4("projection", projection);
+	this->quad.draw(*shader);
 }

@@ -3,6 +3,7 @@
 
 #include "framebuffer.h"
 #include "model.h"
+#include "gbuffer.h"
 
 class SSAO
 {
@@ -11,10 +12,11 @@ public:
 	float lerp(float a, float b, float f);
 	void createKernel(int length);
 	void genTexturesAndFB(int width, int height, int length);
-	void draw(Model& model);
+	void draw(Framebuffer* gBuffer, Shader* shader, glm::mat4& projection);
 private:
-	Framebuffer gBuffer;
+	Model quad{"models/postProcessing/quad.obj"};
 	unsigned int noiseTexture, colorBuffer, frameBuffer;
+	std::vector<glm::vec3> kernel;
 };
 
 #endif // !CPP_OGL_SSAO_HEADER
