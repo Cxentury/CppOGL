@@ -5,6 +5,8 @@
 #include "headers/pointLight.h"
 #include "headers/directionalLight.h"
 #include "headers/postProcessing.h"
+#include "headers/SSAO.h"
+
 #include <iostream>
 #include <iterator>
 #include <filesystem>
@@ -83,8 +85,8 @@ void Scene::setOpenGLOptions() {
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_STENCIL_TEST);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void Scene::setCallBacks() {
@@ -102,6 +104,9 @@ void Scene::renderLoop() {
 	setOpenGLOptions();
 	
 	Model sceneModel{ "models/postProcessing/quad.obj" };
+	Shader* SSAOShader = m_shaders.find("SSAO")->second;
+
+	SSAO ssao{Scene::width, Scene::height};
 
 	//Keep if either of the stencil or depth test fails
 	//and replace if both succeed
@@ -121,32 +126,46 @@ void Scene::renderLoop() {
 
 		//dont put this-> it will make the line too long
 		//draw normal scene
-		Framebuffer* fb = m_framebuffers.find("framebuffer")->second;
-		fb->use(Scene::width, Scene::height);
-		fb->setOuputTexture(0);
-		this->drawScene("default");
+		Framebuffer* buffer = this->m_framebuffers.find("gbuffer")->second;
+		buffer->use(Scene::width, Scene::height);
+		unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+		glDrawBuffers(3, attachments);
+		this->drawScene("gBuffer");
 
-		if (pProcessing.getBool("blur")) {
-			//draw the blured scene
-			Shader* blur = m_shaders.find("boxBlur")->second;
-			fb->setInputTextures(*blur, 1);
-			fb->setOuputTexture(1);
-			sceneModel.draw(*blur);
-		}
-		else if(pProcessing.getBool("bokeh")){
-			Shader* bokeh = m_shaders.find("bokeh")->second;
-			fb->setInputTextures(*bokeh, 1);
-			fb->setOuputTexture(1);
-			sceneModel.draw(*bokeh);
-		}
-		Shader* pProcessingShader = m_shaders.find("postProcessing")->second;
-		pProcessing.updateUniforms(*pProcessingShader);
+		//if (pProcessing.getBool("blur")) {
+		//	//draw the blured scene
+		//	Shader* blur = m_shaders.find("boxBlur")->second;
+		//	fb->setInputTextures(*blur, 1);
+		//	fb->setOuputTexture(1);
+		//	sceneModel.draw(*blur);
+		//}
+		//else if(pProcessing.getBool("bokeh")){
+		//	Shader* bokeh = m_shaders.find("bokeh")->second;
+		//	fb->setInputTextures(*bokeh, 1);
+		//	fb->setOuputTexture(1);
+		//	sceneModel.draw(*bokeh);
+		//}
+		//Shader* pProcessingShader = m_shaders.find("postProcessing")->second;
+		//pProcessing.updateUniforms(*pProcessingShader);
 
-		//Default framebuffer
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		
+
+
+
+		////Default framebuffer
+		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		//glDisable(GL_DEPTH_TEST);
 		glDisable(GL_DEPTH_TEST);
-		fb->setInputTextures(*pProcessingShader, 2);
-		sceneModel.draw(*pProcessingShader);
+		
+		/*SSAO*/
+		glm::mat4 projection;					   //FOV	         //Aspect ratio                              //near //far plane frustum
+		projection = glm::perspective(glm::radians(camera.getFov()), (float)Scene::width / (float)Scene::height, 0.1f, 100.0f);
+		ssao.draw(buffer, SSAOShader, projection);
+		/*---*/
+
+		//fb->setInputTextures(*pProcessingShader, 2);
+		//sceneModel.draw(*pProcessingShader);
+
 
 		this->m_gui.render(this);
 
@@ -169,7 +188,7 @@ void Scene::drawScene(std::string shaderName) {
 
 	//Prevent writing to the stencil buffer
 	glStencilMask(0x00);
-	m_cubemaps.find("ocean")->second->draw(camera.getLookAtMatrix(), projection);
+	//m_cubemaps.find("ocean")->second->draw(camera.getLookAtMatrix(), projection);
 
 	//Must use the shader before calling glUniform()
 	Shader* shader = m_shaders.find(shaderName)->second;
@@ -231,6 +250,8 @@ void Scene::setupScene() {
 
 
 	this->addShader("shaders/default.vert", "shaders/default.frag" );
+	this->addShader("shaders/default.vert", "shaders/gBuffer.frag");
+	this->addShader("shaders/postProcessing/postProcessing.vert", "shaders/SSAO.frag");
 	this->addShader("shaders/default.vert", "shaders/light.frag");
 	this->addShader("shaders/outline.vert", "shaders/outline.frag");
 	this->addShaderFolder("shaders/postProcessing");
@@ -238,7 +259,8 @@ void Scene::setupScene() {
 	//this->addCubemap("ocean", new CubeMap{ "models/skybox/ocean&mountains",std::vector<std::string>{"posx.jpg","negx.jpg","posy.jpg","negy.jpg","posz.jpg","negz.jpg"} }),
 	this->addCubemap("ocean", new CubeMap{ "models/skybox/hdr/industrial_sunset_puresky_4k.hdr"} ),
 	
-	this->addFramebuffer("framebuffer", new Framebuffer{ Scene::width, Scene::height, 2, false});
+	this->addFramebuffer("framebuffer", new Framebuffer{ Scene::width, Scene::height, 2, false });
+	this->addFramebuffer("gbuffer", new Framebuffer{ Scene::width, Scene::height, 3, false, GL_NEAREST});
 }
 
 

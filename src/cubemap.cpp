@@ -97,29 +97,27 @@ void CubeMap::draw(glm::mat4 view, glm::mat4 projection) {
     this->shader->setFloat("hdr", hdr);
 
     GLenum textureType = GL_TEXTURE_CUBE_MAP;
-    /*this->shader->setFloat("skybox", 0);
+    glActiveTexture(GL_TEXTURE0);
+    
+    //Causes conflicting binding
     if (hdr) {
-        glActiveTexture(GL_TEXTURE1);
-        this->shader->setFloat("skyboxHDR", 1);
+        this->shader->setFloat("skyboxHDR", 0);
+        this->shader->setFloat("skybox", 1);
         textureType = GL_TEXTURE_2D;
     }
     else
-        glActiveTexture(GL_TEXTURE0);
-    */
+        this->shader->setFloat("skybox", 0);
+
 
     glBindVertexArray(this->m_VAO);
     textureType = GL_TEXTURE_2D;
     
-    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
     glActiveTexture(GL_TEXTURE0);
-    
-    //glActiveTexture(GL_TEXTURE1);
     glBindTexture(textureType, this->m_texture.getID());
 
     glDrawArrays(GL_TRIANGLES, 0, this->m_vertices.size());
     
     
     glBindTexture(textureType, 0);
-    glActiveTexture(GL_TEXTURE0);
     glDepthMask(true);
 }
