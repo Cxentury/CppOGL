@@ -27,7 +27,7 @@ Framebuffer::Framebuffer(int width, int height, int nbAttachments, bool depthBuf
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapping);
 
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, textureID, 0);
-
+		this->attachmentEnum.push_back(GL_COLOR_ATTACHMENT0 + i);
 		//Unbind
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
@@ -58,11 +58,13 @@ Framebuffer::Framebuffer(int width, int height, int nbAttachments, bool depthBuf
 		logger.log("Error in framebuffer");
 		exit(-1);
 	}
+
 	//unbind
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Framebuffer::use(int width, int height) {
+
 	//We need to recreate the texture buffer if the dimension of the scene changes
 	if (this->m_width != width || this->m_height != height) {
 		
@@ -80,37 +82,35 @@ void Framebuffer::use(int width, int height) {
 			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
 		}
 	}
+	
 	glBindFramebuffer(GL_FRAMEBUFFER, this->m_ID);
+	glDrawBuffers(this->attachmentEnum.size(), this->attachmentEnum.data());
 }
 
-void Framebuffer::setInputTextures(Shader& shader, int size) {
+void Framebuffer::setInputTextures(Shader* shader) {
 	
-	shader.use();
+	shader->use();
 
 	unsigned int i;
 	std::string name;
-	for (i = 0; i < size; i++)
+
+	for (i = 0; i < this->colorAttachements.size(); i++)
 	{
 		name = "texture" + std::to_string(i);
+		shader->setInt(name,i);
 		glActiveTexture(GL_TEXTURE0+i);
 		glBindTexture(GL_TEXTURE_2D, this->colorAttachements[i]);
-		shader.setInt(name,i);
 
 	}
 	
 	if (this->m_depthBuffer) {
 		glActiveTexture(GL_TEXTURE0+i);
-		shader.setInt("depthBufferTexture", i);
+		shader->setInt("depthBufferTexture", i);
 		glBindTexture(GL_TEXTURE_2D, this->m_depthBufferID);
 	}
 	
 	//Reset to default
 	glActiveTexture(GL_TEXTURE0);
-}
-
-void Framebuffer::setOuputTexture(int position){
-	//attach to framebuffer
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->colorAttachements[position], 0);
 }
 
 int Framebuffer::getTextureID(int position) {

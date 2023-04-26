@@ -158,7 +158,7 @@ Material Model::setMaterialColors(Material& mat, aiMaterial* material) {
 	return mat;
 }
 
-void Model::draw(Shader &shader)
+void Model::draw(Shader* shader)
 {
 	// avoiding copying by passing reference
 	for (Model &model : this->m_children)

@@ -6,9 +6,6 @@ in vec2 textCoord;
 //raw scene texture
 uniform sampler2D texture0;
 
-//postProcessed scene's texture;
-uniform sampler2D texture1;
-
 struct ChromaticAberration_t {
     float redOff, greenOff, blueOff;
 };
@@ -38,14 +35,14 @@ void main() {
         FragColor.ba = texture(texture0, textCoord - (direction * cAberration.blueOff)).ba;
     }
     else if (effects.blur)
-        FragColor = texture(texture1, textCoord);
+        FragColor = texture(texture0, textCoord);
 
     else if(effects.bokeh){
         int boxSize = 3;
         //Putting this here until I create a new shader for the bokeh blur
 	    for(int i = -boxSize; i <= boxSize; i++){
 		    for(int j=-boxSize; j <= boxSize; j++)
-			    FragColor+=texture(texture1, textCoord.xy + vec2(i,j) / textureSize(texture1,0));
+			    FragColor+=texture(texture0, textCoord.xy + vec2(i,j) / textureSize(texture0,0));
 	    }
 	    FragColor /= pow(boxSize*2+1,2);
     }

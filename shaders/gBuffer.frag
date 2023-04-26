@@ -1,8 +1,8 @@
 #version 330 core
 
-layout(location = 0) out vec4 gPosition;
-layout(location = 1) out vec3 gNormal;
-layout(location = 2) out vec4 gAlbedospec;
+layout(location = 0) out vec4 gAlbedospec;
+layout(location = 1) out vec4 gPosition;
+layout(location = 2) out vec3 gNormal;
 
 uniform sampler2D diffuseMap0;
 uniform sampler2D specularMap0;

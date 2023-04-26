@@ -38,11 +38,11 @@ void Mesh::configureBuffers() {
 	glBindVertexArray(0);
 
 }
-void Mesh::draw(Shader& shader) {
+void Mesh::draw(Shader* shader) {
 
-	shader.use();
-	setTextures(shader);
-	setMaterials(shader);
+	shader->use();
+	this->setTextures(shader);
+	this->setMaterials(shader);
 			
 	//We set the correct model for the Mesh (this is the localTransform according to its parents, so its world transform)
 	glm::mat4 model = glm::transpose(glm::make_mat4(&this->localTransform.a1));
@@ -59,15 +59,15 @@ void Mesh::draw(Shader& shader) {
 	glm::mat3 normalMatrix = glm::transpose(glm::inverse(model));
 
 
-	shader.setMatrix3("normalMatrix", normalMatrix);
-	shader.setMatrix4("model", model);
+	shader->setMatrix3("normalMatrix", normalMatrix);
+	shader->setMatrix4("model", model);
 
 	glBindVertexArray(this->m_VAO);
 	glDrawElements(GL_TRIANGLES, this->m_indices.size(), GL_UNSIGNED_INT,0);
 
 }
 
-void Mesh::setTextures(Shader& shader) {
+void Mesh::setTextures(Shader* shader) {
 	int diffuseCpt = 0, normalCpt = 0, specularCpt = 0, heightCpt = 0, opacityCpt = 0;
 	int counter = 0;
 	std::string samplerName;
@@ -101,30 +101,30 @@ void Mesh::setTextures(Shader& shader) {
 			samplerName = "";
 		}
 
-		int location = glGetUniformLocation(shader.getId(), (samplerName + std::to_string(counter)).c_str());
+		int location = glGetUniformLocation(shader->getId(), (samplerName + std::to_string(counter)).c_str());
 		if (location >= 0) {
 			glUniform1i(location, i);
 			glBindTexture(GL_TEXTURE_2D, this->m_textures[i].getID());
 		}
 	}
 
-	shader.setBool("maps.diffuse", diffuseCpt);
-	shader.setBool("maps.height", heightCpt);
-	shader.setBool("maps.opacity", opacityCpt);
-	shader.setBool("maps.normal", normalCpt);
+	shader->setBool("maps.diffuse", diffuseCpt);
+	shader->setBool("maps.height", heightCpt);
+	shader->setBool("maps.opacity", opacityCpt);
+	shader->setBool("maps.normal", normalCpt);
 
 	//Reset to default
 	glActiveTexture(GL_TEXTURE0);
 }
 
-void Mesh::setMaterials(Shader& shader) {
+void Mesh::setMaterials(Shader* shader) {
 
-	shader.setBool("hasMaterial", this->m_material.hasColor());
-	shader.setVec3("material.diffuse", m_material.diffuse);
-	shader.setVec3("material.specular", m_material.specular);
-	shader.setVec3("material.ambiant", m_material.ambiant);
-	shader.setFloat("material.specularExponent", m_material.specularExponent);
-	shader.setFloat("material.opacity", m_material.opacity);
+	shader->setBool("hasMaterial", this->m_material.hasColor());
+	shader->setVec3("material.diffuse", m_material.diffuse);
+	shader->setVec3("material.specular", m_material.specular);
+	shader->setVec3("material.ambiant", m_material.ambiant);
+	shader->setFloat("material.specularExponent", m_material.specularExponent);
+	shader->setFloat("material.opacity", m_material.opacity);
 }
 
 std::vector<Vertex> Mesh::getVertices() {

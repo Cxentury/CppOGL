@@ -44,7 +44,7 @@ public:
 	* @param shader - Shader who will draw the model
 	* @param scale - Scale of the model
 	*/
-	void draw(Shader& shader);
+	void draw(Shader* shader);
 	/**
 	* @return a vector containing the vertices of the mesh
 	*/
@@ -63,8 +63,8 @@ public:
 	* @param the new position of the mesh
 	*/
 	void setPosition(glm::vec3 position);
-	void setTextures(Shader& shader);
-	void setMaterials(Shader& shader);
+	void setTextures(Shader* shader);
+	void setMaterials(Shader* shader);
 	void setScale(float scale);
 protected:
 	uint32_t m_VAO, m_VBO, m_EBO;

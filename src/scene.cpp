@@ -105,7 +105,10 @@ void Scene::renderLoop() {
 	
 	Model sceneModel{ "models/postProcessing/quad.obj" };
 	Shader* SSAOShader = m_shaders.find("SSAO")->second;
+	Shader* pProcessingShader = m_shaders.find("postProcessing")->second;
 
+	Framebuffer* gbuffer = this->m_framebuffers.find("gbuffer")->second;
+	Framebuffer* pBuffer = this->m_framebuffers.find("pBuffer")->second;
 	SSAO ssao{Scene::width, Scene::height};
 
 	//Keep if either of the stencil or depth test fails
@@ -116,7 +119,6 @@ void Scene::renderLoop() {
 	int frame = 0;
 
 	this->m_gui.init(m_pWindow);
-
 	while (!glfwWindowShouldClose(m_pWindow)) {
 
 
@@ -124,48 +126,44 @@ void Scene::renderLoop() {
 		deltaTime = current - lastFrame;
 		lastFrame = current;
 
-		//dont put this-> it will make the line too long
-		//draw normal scene
-		Framebuffer* buffer = this->m_framebuffers.find("gbuffer")->second;
-		buffer->use(Scene::width, Scene::height);
-		unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-		glDrawBuffers(3, attachments);
+		gbuffer->use(Scene::width, Scene::height);
 		this->drawScene("gBuffer");
-
-		//if (pProcessing.getBool("blur")) {
-		//	//draw the blured scene
-		//	Shader* blur = m_shaders.find("boxBlur")->second;
-		//	fb->setInputTextures(*blur, 1);
-		//	fb->setOuputTexture(1);
-		//	sceneModel.draw(*blur);
-		//}
-		//else if(pProcessing.getBool("bokeh")){
-		//	Shader* bokeh = m_shaders.find("bokeh")->second;
-		//	fb->setInputTextures(*bokeh, 1);
-		//	fb->setOuputTexture(1);
-		//	sceneModel.draw(*bokeh);
-		//}
-		//Shader* pProcessingShader = m_shaders.find("postProcessing")->second;
-		//pProcessing.updateUniforms(*pProcessingShader);
-
 		
+		glDisable(GL_DEPTH_TEST);
+		if (pProcessing.getBool("blur")) {
+			//draw the blured scene
+			Shader* blur = m_shaders.find("boxBlur")->second;
 
+			gbuffer->setInputTextures(blur);
+			pBuffer->use(Scene::width, Scene::height);
+			
+			sceneModel.draw(blur);
+			pBuffer->setInputTextures(pProcessingShader);
+		}
+		else if(pProcessing.getBool("bokeh")){
+			Shader* bokeh = m_shaders.find("bokeh")->second;
+
+			gbuffer->setInputTextures(bokeh);
+			pBuffer->use(Scene::width, Scene::height);
+
+
+			sceneModel.draw(bokeh);
+			pBuffer->setInputTextures(pProcessingShader);
+		}
+		else
+			gbuffer->setInputTextures(pProcessingShader);
 
 
 		////Default framebuffer
-		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		//glDisable(GL_DEPTH_TEST);
-		glDisable(GL_DEPTH_TEST);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		pProcessing.updateUniforms(*pProcessingShader);
+		sceneModel.draw(pProcessingShader);
 		
 		/*SSAO*/
-		glm::mat4 projection;					   //FOV	         //Aspect ratio                              //near //far plane frustum
-		projection = glm::perspective(glm::radians(camera.getFov()), (float)Scene::width / (float)Scene::height, 0.1f, 100.0f);
-		ssao.draw(buffer, SSAOShader, projection);
+		//glm::mat4 projection;					   //FOV	         //Aspect ratio                              //near //far plane frustum
+		//projection = glm::perspective(glm::radians(camera.getFov()), (float)Scene::width / (float)Scene::height, 0.1f, 100.0f);
+		//ssao.draw(gbuffer, SSAOShader, projection);
 		/*---*/
-
-		//fb->setInputTextures(*pProcessingShader, 2);
-		//sceneModel.draw(*pProcessingShader);
-
 
 		this->m_gui.render(this);
 
@@ -188,7 +186,7 @@ void Scene::drawScene(std::string shaderName) {
 
 	//Prevent writing to the stencil buffer
 	glStencilMask(0x00);
-	//m_cubemaps.find("ocean")->second->draw(camera.getLookAtMatrix(), projection);
+	m_cubemaps.find("ocean")->second->draw(camera.getLookAtMatrix(), projection);
 
 	//Must use the shader before calling glUniform()
 	Shader* shader = m_shaders.find(shaderName)->second;
@@ -209,7 +207,7 @@ void Scene::drawScene(std::string shaderName) {
 	glStencilMask(0xFF);
 	for (Model* model : this->getModels()) {
 		if (model->getActive())
-			model->draw(*shader);
+			model->draw(shader);
 	}
 
 	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
@@ -217,7 +215,7 @@ void Scene::drawScene(std::string shaderName) {
 	glDisable(GL_DEPTH_TEST);
 	for (Model* upScaledModel : this->getModels()) {
 		if (upScaledModel->isOutlined())
-			upScaledModel->draw(*outlineShader);
+			upScaledModel->draw(outlineShader);
 	}
 	glStencilMask(0xFF);
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
@@ -259,8 +257,8 @@ void Scene::setupScene() {
 	//this->addCubemap("ocean", new CubeMap{ "models/skybox/ocean&mountains",std::vector<std::string>{"posx.jpg","negx.jpg","posy.jpg","negy.jpg","posz.jpg","negz.jpg"} }),
 	this->addCubemap("ocean", new CubeMap{ "models/skybox/hdr/industrial_sunset_puresky_4k.hdr"} ),
 	
-	this->addFramebuffer("framebuffer", new Framebuffer{ Scene::width, Scene::height, 2, false });
 	this->addFramebuffer("gbuffer", new Framebuffer{ Scene::width, Scene::height, 3, false, GL_NEAREST});
+	this->addFramebuffer("pBuffer", new Framebuffer{ Scene::width, Scene::height, 1, false, GL_NEAREST });
 }
 
 

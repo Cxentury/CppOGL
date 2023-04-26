@@ -63,7 +63,7 @@ public:
 	/**
 	* @brief Call each mesh in m_children and each model in m_meshes and call their draw function
 	*/
-	void draw(Shader& shader);
+	void draw(Shader* shader);
 
 	/**
 	 * @brief Adds a mesh to the model object

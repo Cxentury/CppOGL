@@ -77,11 +77,11 @@ void SSAO::draw(Framebuffer* gBuffer, Shader* shader, glm::mat4& projection) {
 
 	//position
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, gBuffer->getTextureID(0));
+	glBindTexture(GL_TEXTURE_2D, gBuffer->getTextureID(1));
 
 	//normal
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, gBuffer->getTextureID(1));
+	glBindTexture(GL_TEXTURE_2D, gBuffer->getTextureID(2));
 
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, noiseTexture);
@@ -89,5 +89,5 @@ void SSAO::draw(Framebuffer* gBuffer, Shader* shader, glm::mat4& projection) {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glUniform3fv(glGetUniformLocation(shader->getId(), "samples"), this->kernel.size(), glm::value_ptr(this->kernel[0]));
 	shader->setMatrix4("projection", projection);
-	this->quad.draw(*shader);
+	this->quad.draw(shader);
 }

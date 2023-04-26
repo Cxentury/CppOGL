@@ -23,14 +23,7 @@ public:
 	 * @param shader - The shader who will get the textures generated via the framebuffer
 	 * @param size - Number of textures to be added to the shader
 	 */
-	void setInputTextures(Shader &shader, int size);
-
-	/**
-	 * Used to set what texture will be drawn to
-	 *
-	 * @param position - The position of the texture where the framebuffer will draw
-	 */
-	void setOuputTexture(int position);
+	void setInputTextures(Shader* shader);
 
 	/**
 	 * Binds the frameBuffer and checks if the textures need to be redimensioned
@@ -46,6 +39,7 @@ public:
 private:
 	// IDs if the textures
 	std::vector<unsigned int> colorAttachements;
+	std::vector<GLenum> attachmentEnum;
 
 protected:
 	unsigned int m_ID, m_rbo, m_depthBufferID;
