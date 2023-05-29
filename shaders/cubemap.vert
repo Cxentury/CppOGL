@@ -10,7 +10,7 @@ uniform mat4 view;
 void main(){
 	
 	//inverting z because cubemaps uses left handed coordinate sytem
-	textCoords = vec3(aPos.xy, -aPos.z);
+	textCoords = vec3(aPos.x,-aPos.y, -aPos.z);
 
 	gl_Position = projection * view * vec4(aPos,1.0);
 }

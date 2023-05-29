@@ -104,21 +104,61 @@ Mesh Model::createMesh(aiMesh *mesh, const aiScene *scene, aiMatrix4x4 &localTra
 		}
 	}
 
-	std::vector<Texture> normalMap = loadMaterial(scene->mMaterials[mesh->mMaterialIndex], aiTextureType_NORMALS);
-	textures.insert(textures.end(), normalMap.begin(), normalMap.end());
-	std::vector<Texture> specularMap = loadMaterial(scene->mMaterials[mesh->mMaterialIndex], aiTextureType_SPECULAR);
-	textures.insert(textures.end(), specularMap.begin(), specularMap.end());
-	std::vector<Texture> diffuseMap = loadMaterial(scene->mMaterials[mesh->mMaterialIndex], aiTextureType_DIFFUSE);
-	textures.insert(textures.end(), diffuseMap.begin(), diffuseMap.end());
-	std::vector<Texture> heightMap = loadMaterial(scene->mMaterials[mesh->mMaterialIndex], aiTextureType_HEIGHT);
-	textures.insert(textures.end(), heightMap.begin(), heightMap.end());
-	std::vector<Texture> opacityMap = loadMaterial(scene->mMaterials[mesh->mMaterialIndex], aiTextureType_OPACITY);
-	textures.insert(textures.end(), opacityMap.begin(), opacityMap.end());
+	aiMaterial* mat = scene->mMaterials[mesh->mMaterialIndex];
+	setMeshTextures(textures, mat);
 
-	return Mesh{vertices, indices, textures, localTransform, this->position};
+	Material material{};
+	if (scene->HasMaterials()) {
+		setMaterialColors(material,mat);
+	}
+
+	return Mesh{vertices, indices, textures, localTransform, this->position, material};
 }
 
-void Model::draw(Shader &shader)
+void Model::setMeshTextures(std::vector<Texture>& textures, aiMaterial* mat) {
+	std::vector<Texture> normalMap = loadMaterial(mat, aiTextureType_NORMALS);
+	textures.insert(textures.end(), normalMap.begin(), normalMap.end());
+	std::vector<Texture> specularMap = loadMaterial(mat, aiTextureType_SPECULAR);
+	textures.insert(textures.end(), specularMap.begin(), specularMap.end());
+	std::vector<Texture> diffuseMap = loadMaterial(mat, aiTextureType_DIFFUSE);
+	textures.insert(textures.end(), diffuseMap.begin(), diffuseMap.end());
+	std::vector<Texture> heightMap = loadMaterial(mat, aiTextureType_HEIGHT);
+	textures.insert(textures.end(), heightMap.begin(), heightMap.end());
+	std::vector<Texture> opacityMap = loadMaterial(mat, aiTextureType_OPACITY);
+	textures.insert(textures.end(), opacityMap.begin(), opacityMap.end());
+}
+
+Material Model::setMaterialColors(Material& mat, aiMaterial* material) {
+
+	aiColor3D color(0.0f);
+	float opacity = 1.0f, specularExponent = 32.0f;
+
+	//Get material only for meshes without textures
+	if (material->GetTextureCount(aiTextureType_DIFFUSE) == 0) {
+		material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
+		mat.addColor(MAT_DIFFUSE, glm::vec3(color.r, color.g, color.b));
+	}
+
+	if (material->GetTextureCount(aiTextureType_AMBIENT) == 0) {
+		material->Get(AI_MATKEY_COLOR_AMBIENT, color);
+		mat.addColor(MAT_AMBIANT, glm::vec3(color.r, color.g, color.b));
+	}
+
+	if (material->GetTextureCount(aiTextureType_SPECULAR) == 0) {
+		material->Get(AI_MATKEY_COLOR_SPECULAR, color);
+		mat.addColor(MAT_SPECULAR, glm::vec3(color.r, color.g, color.b));
+	}
+
+	material->Get(AI_MATKEY_SHININESS, specularExponent);
+	material->Get(AI_MATKEY_OPACITY, opacity);
+
+	mat.opacity = opacity;
+	mat.specularExponent = specularExponent;
+
+	return mat;
+}
+
+void Model::draw(Shader* shader)
 {
 	// avoiding copying by passing reference
 	for (Model &model : this->m_children)

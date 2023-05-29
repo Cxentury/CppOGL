@@ -68,7 +68,7 @@ Texture Texture::loadCubemap(std::vector<std::string> paths)
             break;
         }
 
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, nrChannels, width, height, 0, nrChannels, GL_FLOAT, data);
         stbi_image_free(data);
     }
 
@@ -77,6 +77,33 @@ Texture Texture::loadCubemap(std::vector<std::string> paths)
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    return t;
+}
+Texture Texture::loadCubemapHDR(std::string path) {
+
+    Texture t;
+    stbi_set_flip_vertically_on_load(false);
+    glGenTextures(1, &t.m_ID);
+    glBindTexture(GL_TEXTURE_2D, t.m_ID);
+
+    int width, height, nrChannels;
+    float* data = stbi_loadf(path.c_str(), &width, &height, &nrChannels, 0);
+
+    if (data == nullptr)
+    {
+        stbi_image_free(data);
+        logger.log("Failed to load texture: " + path);
+        return t;
+    }
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGB, GL_FLOAT, data);
+
+    stbi_image_free(data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     return t;
 }

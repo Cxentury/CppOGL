@@ -33,6 +33,7 @@ void UserParameters::render(Scene* scene) {
         }
         
         if (ImGui::CollapsingHeader("Scène")) {
+            drawDisplayHeader(scene);
             drawLightHeader(scene);
             drawModelHeader(scene);
             drawEffectsHeader(scene);
@@ -44,14 +45,26 @@ void UserParameters::render(Scene* scene) {
     }
 }
 
+void UserParameters::drawDisplayHeader(Scene* scene) {
+    if (ImGui::TreeNode("display")) {
+        if (ImGui::DragFloat("Gamma", &scene->getProcessing().getGamma(), 0.1f, 1.0f,4.0f)) {
+            Shader* postProcessing = scene->findShader("postProcessing");
+            scene->getProcessing().updateUniforms(*postProcessing);
+        }
+
+        ImGui::TreePop();
+    }
+}
+
 void UserParameters::drawEffectsHeader(Scene* scene) {
     if (ImGui::TreeNode("Effects")) {
-
+        ImGui::Checkbox("HDR", &scene->getBool("hdr"));
+        ImGui::Separator();
         ImGui::Checkbox("Blur", &scene->getBool("blur"));
         ImGui::Separator();
         ImGui::Checkbox("Bokeh", &scene->getBool("bokeh"));
         ImGui::Separator();
-        ImGui::Checkbox("Chromatic Aberation", &scene->getBool("chromaticAberation"));
+        ImGui::Checkbox("Chromatic Aberration", &scene->getBool("chromaticAberration"));
 
         if (ImGui::DragFloat("Red offset", &scene->getProcessing().getChromatic().redOff, 0.001f, -0.03f, 0.03f)) {
             Shader* postProcessing = scene->findShader("postProcessing");
@@ -235,8 +248,11 @@ void UserParameters::drawSelectedLightOptions(Light* light) {
     ImGui::Checkbox("Active", &light->getActive());
 
     std::vector<Triple<std::string, std::string, float &>> options = light->getOptions();
-            
+
+    ImGui::DragFloat("Scale: ", &light->getScale(), 0.1f,0.0f,2.0f);
+    ImGui::Separator();
     ImGui::ColorEdit3("color 3", value_ptr(light->getColor()));
+
     drawLightPositionsSlider(light);
     
     for (Triple<std::string, std::string, float&>& option : options) {

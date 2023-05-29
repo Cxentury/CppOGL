@@ -1,7 +1,7 @@
 #include "headers/postProcessing.h"
 
-ChromaticAberation_t& PostProcessing::getChromatic(){
-    return this->cAberation;
+ChromaticAberration_t& PostProcessing::getChromatic(){
+    return this->cAberration;
 }
 
 Bloom_t& PostProcessing::getBloom(){
@@ -11,6 +11,9 @@ Bloom_t& PostProcessing::getBloom(){
 bool& PostProcessing::getBool(std::string name) {
     return this->effects.find(name)->second;
 }
+float& PostProcessing::getGamma() {
+    return this->gamma;
+}
 
 void PostProcessing::updateUniforms(Shader& shader) {
     shader.use();
@@ -19,7 +22,8 @@ void PostProcessing::updateUniforms(Shader& shader) {
         uniform = "effects." + pair.first;
         shader.setBool(uniform, pair.second);
     }
-    shader.setFloat("cAberation.redOff", this->cAberation.redOff);
-    shader.setFloat("cAberation.greenOff", this->cAberation.greenOff);
-    shader.setFloat("cAberation.blueOff", this->cAberation.blueOff);
+    shader.setFloat("cAberration.redOff", this->cAberration.redOff);
+    shader.setFloat("cAberration.greenOff", this->cAberration.greenOff);
+    shader.setFloat("cAberration.blueOff", this->cAberration.blueOff);
+    shader.setFloat("gamma", this->gamma);
 }

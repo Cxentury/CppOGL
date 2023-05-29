@@ -4,11 +4,11 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>          
 #include <assimp/postprocess.h>
+#include "material.h"
 
 #include "mesh.h"
 #include "vector"
 #include "iostream"
-
 class Model
 {
 public:
@@ -63,7 +63,7 @@ public:
 	/**
 	* @brief Call each mesh in m_children and each model in m_meshes and call their draw function
 	*/
-	void draw(Shader& shader);
+	void draw(Shader* shader);
 
 	/**
 	 * @brief Adds a mesh to the model object
@@ -150,6 +150,9 @@ public:
 	 * @return false If the model is the model should not be drawn
 	 */
 	bool& getActive();
+
+	void setMeshTextures(std::vector<Texture>& textures, aiMaterial* mat);
+	Material setMaterialColors(Material& mat, aiMaterial* material);
 
 private:
 	std::string m_directory;

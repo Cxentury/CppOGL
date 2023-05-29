@@ -1,6 +1,6 @@
 #version 330 core
 
-out vec4 FragColor;
+layout(location = 0) out vec4 bluredScene;
 
 in vec2 textCoord;
 
@@ -11,8 +11,8 @@ void main() {
 	
 	for(int i = -boxSize; i <= boxSize; i++){
 		for(int j=-boxSize; j <= boxSize; j++){
-			FragColor+=texture(texture0, textCoord.xy + vec2(i,j) / textureSize(texture0,0));
+			bluredScene +=texture(texture0, textCoord.xy + vec2(i,j) / textureSize(texture0,0));
 		}
 	}
-	FragColor /= pow(boxSize*2+1,2);
-}
+	bluredScene /= pow(boxSize*2+1,2);
+}		

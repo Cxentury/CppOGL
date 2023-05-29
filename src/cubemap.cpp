@@ -3,7 +3,7 @@
 CubeMap::CubeMap(std::vector<std::string> paths) {
 	this->m_texture = Texture::loadCubemap(paths);
 	this->configureMesh();
-    this->shader = std::make_unique<Shader>("shaders/cubemap.vs","shaders/cubemap.fs");
+    this->shader = std::make_unique<Shader>("shaders/cubemap.vert","shaders/cubemap.frag");
 }
 
 CubeMap::CubeMap(std::string dir, std::vector<std::string> paths){
@@ -12,8 +12,15 @@ CubeMap::CubeMap(std::string dir, std::vector<std::string> paths){
 		path = dir + "/" + path;
 	}
 	this->m_texture = Texture::loadCubemap(paths);
-    this->shader = std::make_unique<Shader>("shaders/cubemap.vs","shaders/cubemap.fs");
+    this->shader = std::make_unique<Shader>("shaders/cubemap.vert","shaders/cubemap.frag");
 	this->configureMesh();
+}
+
+CubeMap::CubeMap(std::string path) {
+    this->m_texture = Texture::loadCubemapHDR(path);
+    this->shader = std::make_unique<Shader>("shaders/cubemap.vert", "shaders/cubemap.frag");
+    this->hdr = true;
+    this->configureMesh();
 }
 
 void CubeMap::configureMesh() {
@@ -87,10 +94,30 @@ void CubeMap::draw(glm::mat4 view, glm::mat4 projection) {
     this->shader->use();
     this->shader->setMatrix4("view", glm::mat4(glm::mat3(view)));
     this->shader->setMatrix4("projection", projection);
+    this->shader->setFloat("hdr", hdr);
+
+    GLenum textureType = GL_TEXTURE_CUBE_MAP;
+    glActiveTexture(GL_TEXTURE0);
+    
+    //Causes conflicting binding
+    if (hdr) {
+        this->shader->setFloat("skyboxHDR", 0);
+        this->shader->setFloat("skybox", 1);
+        textureType = GL_TEXTURE_2D;
+    }
+    else
+        this->shader->setFloat("skybox", 0);
+
 
     glBindVertexArray(this->m_VAO);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, this->m_texture.getID());
+    textureType = GL_TEXTURE_2D;
+    
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(textureType, this->m_texture.getID());
+
     glDrawArrays(GL_TRIANGLES, 0, this->m_vertices.size());
     
+    
+    glBindTexture(textureType, 0);
     glDepthMask(true);
 }

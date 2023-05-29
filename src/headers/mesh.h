@@ -7,6 +7,7 @@
 
 #include "texture.h"
 #include "shader.h"
+#include "material.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>          
@@ -36,14 +37,14 @@ public:
 	* it needs to be multiplied with the model matrix of the mesh to get it's world transform
 	* @param position - Position of the mesh
 	*/
-	Mesh(std::vector<Vertex> vertices, std::vector<uint32_t> indices ,std::vector<Texture> textures, aiMatrix4x4 localTransform, glm::vec3 position);
+	Mesh(std::vector<Vertex> vertices, std::vector<uint32_t> indices ,std::vector<Texture> textures, aiMatrix4x4 localTransform, glm::vec3 position, Material material);
 	/**
 	* Sets the uniforms of the shader (textures, model matrix and normal matrix) and draw the model
 	* 
 	* @param shader - Shader who will draw the model
 	* @param scale - Scale of the model
 	*/
-	void draw(Shader& shader);
+	void draw(Shader* shader);
 	/**
 	* @return a vector containing the vertices of the mesh
 	*/
@@ -62,7 +63,8 @@ public:
 	* @param the new position of the mesh
 	*/
 	void setPosition(glm::vec3 position);
-
+	void setTextures(Shader* shader);
+	void setMaterials(Shader* shader);
 	void setScale(float scale);
 protected:
 	uint32_t m_VAO, m_VBO, m_EBO;
@@ -70,6 +72,7 @@ protected:
 	std::vector<uint32_t> m_indices;
 	std::vector<Texture> m_textures;
 	aiMatrix4x4 localTransform;
+	Material m_material;
 	glm::vec3 position;
 	float scale = 1.0f;
 	void configureBuffers();

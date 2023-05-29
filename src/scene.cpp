@@ -5,6 +5,8 @@
 #include "headers/pointLight.h"
 #include "headers/directionalLight.h"
 #include "headers/postProcessing.h"
+#include "headers/SSAO.h"
+
 #include <iostream>
 #include <iterator>
 #include <filesystem>
@@ -83,8 +85,8 @@ void Scene::setOpenGLOptions() {
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_STENCIL_TEST);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void Scene::setCallBacks() {
@@ -102,6 +104,12 @@ void Scene::renderLoop() {
 	setOpenGLOptions();
 	
 	Model sceneModel{ "models/postProcessing/quad.obj" };
+	Shader* SSAOShader = m_shaders.find("SSAO")->second;
+	Shader* pProcessingShader = m_shaders.find("postProcessing")->second;
+
+	Framebuffer* gbuffer = this->m_framebuffers.find("gbuffer")->second;
+	Framebuffer* pBuffer = this->m_framebuffers.find("pBuffer")->second;
+	SSAO ssao{Scene::width, Scene::height};
 
 	//Keep if either of the stencil or depth test fails
 	//and replace if both succeed
@@ -111,7 +119,6 @@ void Scene::renderLoop() {
 	int frame = 0;
 
 	this->m_gui.init(m_pWindow);
-
 	while (!glfwWindowShouldClose(m_pWindow)) {
 
 
@@ -119,34 +126,44 @@ void Scene::renderLoop() {
 		deltaTime = current - lastFrame;
 		lastFrame = current;
 
-		//dont put this-> it will make the line too long
-		//draw normal scene
-		Framebuffer* fb = m_framebuffers.find("framebuffer")->second;
-		fb->use(Scene::width, Scene::height);
-		fb->setOuputTexture(0);
-		this->drawScene("default");
-
+		gbuffer->use(Scene::width, Scene::height);
+		this->drawScene("gBuffer");
+		
+		glDisable(GL_DEPTH_TEST);
 		if (pProcessing.getBool("blur")) {
 			//draw the blured scene
 			Shader* blur = m_shaders.find("boxBlur")->second;
-			fb->setInputTextures(*blur, 1);
-			fb->setOuputTexture(1);
-			sceneModel.draw(*blur);
+
+			gbuffer->setInputTextures(blur);
+			pBuffer->use(Scene::width, Scene::height);
+			
+			sceneModel.draw(blur);
+			pBuffer->setInputTextures(pProcessingShader);
 		}
 		else if(pProcessing.getBool("bokeh")){
 			Shader* bokeh = m_shaders.find("bokeh")->second;
-			fb->setInputTextures(*bokeh, 1);
-			fb->setOuputTexture(1);
-			sceneModel.draw(*bokeh);
-		}
-		Shader* pProcessingShader = m_shaders.find("postProcessing")->second;
-		pProcessing.updateUniforms(*pProcessingShader);
 
-		//Default framebuffer
+			gbuffer->setInputTextures(bokeh);
+			pBuffer->use(Scene::width, Scene::height);
+
+
+			sceneModel.draw(bokeh);
+			pBuffer->setInputTextures(pProcessingShader);
+		}
+		else
+			gbuffer->setInputTextures(pProcessingShader);
+
+
+		////Default framebuffer
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glDisable(GL_DEPTH_TEST);
-		fb->setInputTextures(*pProcessingShader, 2);
-		sceneModel.draw(*pProcessingShader);
+		pProcessing.updateUniforms(*pProcessingShader);
+		sceneModel.draw(pProcessingShader);
+		
+		/*SSAO*/
+		//glm::mat4 projection;					   //FOV	         //Aspect ratio                              //near //far plane frustum
+		//projection = glm::perspective(glm::radians(camera.getFov()), (float)Scene::width / (float)Scene::height, 0.1f, 100.0f);
+		//ssao.draw(gbuffer, SSAOShader, projection);
+		/*---*/
 
 		this->m_gui.render(this);
 
@@ -190,7 +207,7 @@ void Scene::drawScene(std::string shaderName) {
 	glStencilMask(0xFF);
 	for (Model* model : this->getModels()) {
 		if (model->getActive())
-			model->draw(*shader);
+			model->draw(shader);
 	}
 
 	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
@@ -198,7 +215,7 @@ void Scene::drawScene(std::string shaderName) {
 	glDisable(GL_DEPTH_TEST);
 	for (Model* upScaledModel : this->getModels()) {
 		if (upScaledModel->isOutlined())
-			upScaledModel->draw(*outlineShader);
+			upScaledModel->draw(outlineShader);
 	}
 	glStencilMask(0xFF);
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
@@ -222,18 +239,26 @@ void Scene::drawScene(std::string shaderName) {
 void Scene::setupScene() {
 	
 	this->addLight(new PointLight(glm::vec3(0.0f, 0.2f, 10.0f)));
+	this->addLight(new PointLight(glm::vec3(0.1f, 0.2f, 10.0f)));
+	this->addLight(new PointLight(glm::vec3(0.2f, 0.2f, 10.0f)));
+	this->addLight(new PointLight(glm::vec3(0.3f, 0.2f, 10.0f)));
+	this->addLight(new PointLight(glm::vec3(0.4f, 0.2f, 10.0f)));
 	this->addLight(new DirectionalLight(glm::vec3(-0.2f, -1.0f, -0.3f), glm::vec3(0.5f, 0.5f, 0.5f), 0.5, 0.5));
 	this->addModel(new Model("models/fortressScaled/noSky.obj", glm::vec3(0.0f, -2.0f, -15.0f), 1.0f, false));
 
 
-	this->addShader("shaders/default.vs", "shaders/default.fs" );
-	this->addShader("shaders/default.vs", "shaders/light.fs");
-	this->addShader("shaders/outline.vs", "shaders/outline.fs");
+	this->addShader("shaders/default.vert", "shaders/default.frag" );
+	this->addShader("shaders/default.vert", "shaders/gBuffer.frag");
+	this->addShader("shaders/postProcessing/postProcessing.vert", "shaders/SSAO.frag");
+	this->addShader("shaders/default.vert", "shaders/light.frag");
+	this->addShader("shaders/outline.vert", "shaders/outline.frag");
 	this->addShaderFolder("shaders/postProcessing");
 	
-	this->addCubemap("ocean", new CubeMap{ "models/skybox/ocean&mountains",std::vector<std::string>{"posx.jpg","negx.jpg","posy.jpg","negy.jpg","posz.jpg","negz.jpg"} }),
+	//this->addCubemap("ocean", new CubeMap{ "models/skybox/ocean&mountains",std::vector<std::string>{"posx.jpg","negx.jpg","posy.jpg","negy.jpg","posz.jpg","negz.jpg"} }),
+	this->addCubemap("ocean", new CubeMap{ "models/skybox/hdr/industrial_sunset_puresky_4k.hdr"} ),
 	
-	this->addFramebuffer("framebuffer", new Framebuffer{ Scene::width, Scene::height, 2, false});
+	this->addFramebuffer("gbuffer", new Framebuffer{ Scene::width, Scene::height, 3, false, GL_NEAREST});
+	this->addFramebuffer("pBuffer", new Framebuffer{ Scene::width, Scene::height, 1, false, GL_NEAREST });
 }
 
 
@@ -254,7 +279,7 @@ void Scene::addShaderFolder(std::string folder) {
 
 	for (const auto& entry : std::filesystem::directory_iterator(folder)) {
 		currentFile = entry.path().generic_string();
-		if (entry.path().generic_string().find(".vertex") != std::string::npos)
+		if (entry.path().generic_string().find(".vert") != std::string::npos)
 			vertexPath = currentFile;
 		else
 			paths.push_back(currentFile);
@@ -293,6 +318,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		camera_control = !camera_control;
+		if (camera_control)
+			firstMouse = true;
 		glfwSetInputMode(window, GLFW_CURSOR, camera_control ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
 	}
 }

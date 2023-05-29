@@ -39,6 +39,13 @@ public:
 	glm::vec3 &getColor();
 
 	/**
+	 * @brief Get the reference to the scale of the light
+	 *
+	 * @return float&
+	 */
+	float& getScale();
+
+	/**
 	 * @brief Get the reference to the boolean indicating if the light is active or not
 	 *
 	 * @return true If the light should be drawn

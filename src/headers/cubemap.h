@@ -30,12 +30,16 @@ public:
 	* for all values : "posx.jpg","negx.jpg","posy.jpg","negy.jpg","posz.jpg","negz.jpg" representing the faces of the cubemap
 	*/
 	CubeMap(std::string dir, std::vector<std::string> paths);
+
 	/**
-	* Used for tests
-	*/
-	CubeMap(){
-		this->configureMesh();
-	}
+	 * @brief Construct a new Cube Map object
+	 *
+	 * @note This is used for HDR cubemaps
+	 *
+	 * @param path 
+	 */
+	CubeMap(std::string path);
+	
 	/**
 	* sets m_vertices to make up a cube
 	*/
@@ -58,6 +62,8 @@ protected:
     std::unique_ptr<Shader> shader;
 	//Cube vertices
 	std::vector<float> m_vertices;
+	//Tells if the cubemap is hdr or not
+	bool hdr;
 private:
 	unsigned int m_VAO, m_VBO;
 };
